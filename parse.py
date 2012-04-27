@@ -28,19 +28,23 @@ def read_header(f):
     print header.fileinfo_offset
     return header
 
-def read_message_type(f):
+def read_message_type(f, compressed):
     cmd = read_var_int_32(f)
     tick = read_var_int_32(f)
-    return tick, cmd
+    if compressed:
+        compressed = not not (cmd & demo_pb2.DEM_IsCompressed)
+    cmd = (cmd & ~demo_pb2.DEM_IsCompressed)
+    return tick, cmd, compressed
 
 with open(sys.argv[1], 'rb') as f:
+    compressed = False
     header = DemoHeader(f.read(8), f.read(4))
-    tick, cmd = read_message_type(f)
-    print tick, cmd
+    tick, cmd, compressed = read_message_type(f, compressed)
+    print tick, cmd, compressed
+    if cmd == demo_pb2.DEM_FileHeader:
+        print 'header'
+        size = read_var_int_32(f)
+        demo = demo_pb2.CDemoFileHeader()
+        demo.ParseFromString(f.read(size))
+        print demo
 
-    #demo = demo_pb2.CDemoFileHeader()
-    #demo.ParseFromString(f.read())
-
-    # Read int32
-    # Switch based on that to find message
-    # Process message
