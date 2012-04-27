@@ -21,7 +21,6 @@ def read_var_int_32(f):
             break
     return result
 
-
 def read_header(f):
     header = DemoHeader(f.read(8), f.read(4))
     print header.filestamp
@@ -36,15 +35,19 @@ def read_message_type(f, compressed):
     cmd = (cmd & ~demo_pb2.DEM_IsCompressed)
     return tick, cmd, compressed
 
+def read_message(f, cls):
+    # TODO: Compression handling
+    size = read_var_int_32(f)
+    message = cls()
+    message.ParseFromString(f.read(size))
+    return message
+
 with open(sys.argv[1], 'rb') as f:
     compressed = False
     header = DemoHeader(f.read(8), f.read(4))
     tick, cmd, compressed = read_message_type(f, compressed)
     print tick, cmd, compressed
     if cmd == demo_pb2.DEM_FileHeader:
-        print 'header'
-        size = read_var_int_32(f)
-        demo = demo_pb2.CDemoFileHeader()
-        demo.ParseFromString(f.read(size))
+        demo = read_message(f, demo_pb2.CDemoFileHeader)
         print demo
 
